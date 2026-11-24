@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مدیریت کلکسیون و موجودی کتاب</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --sidebar-bg: #1e293b;
+      --card-bg: #ffffff;
+      --primary: #0ea5e9;
+      --primary-hover: #0284c7;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Tahoma, "Vazirmatn", sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* سایدبار ثابت و همیشه در دسترس */
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      color: #fff;
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .brand-icon {
+      font-size: 28px;
+    }
+
+    .brand h1 {
+      font-size: 18px;
+    }
+
+    .brand small {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      text-align: right;
+      padding: 12px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      background: rgba(14, 165, 233, 0.2);
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .backup-box {
+      margin-top: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .backup-box p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+
+    /* محتوای اصلی */
+    .main-content {
+      flex: 1;
+      padding: 24px 32px;
+      min-width: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      padding: 18px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-right: 4px solid var(--primary);
+    }
+
+    .stat-card.warning {
+      border-right-color: var(--danger);
+    }
+
+    .stat-title {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .stat-card strong {
+      font-size: 22px;
+    }
+
+    /* نوار ابزار */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .search-box input,
+    .toolbar select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .toolbar select {
+      width: auto;
+      min-width: 170px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 11px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: inherit;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      text-align: center;
+      display: block;
+    }
+
+    .modal .btn-outline {
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    /* کارت‌های کتاب */
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 18px;
+    }
+
+    .book-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .book-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .book-top {
+      display: flex;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .book-cover {
+      width: 72px;
+      height: 100px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .book-info h3 {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .book-author {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .book-meta {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .price-tag {
+      font-weight: bold;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .stock-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stock-badge {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .stock-badge.in {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .stock-badge.out {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .qty-btn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .book-notes {
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .book-actions {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .action-link {
+      background: none;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--primary);
+    }
+
+    .action-link.delete {
+      color: var(--danger);
+    }
+
+    /* مودال */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal.hidden {
+      display: none;
+    }
+
+    .modal-content {
+      background: #fff;
+      width: 100%;
+      max-width: 540px;
+      border-radius: 14px;
+      padding: 22px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 5px;
+      color: var(--muted);
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .app-layout {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+      }
+      .main-content {
+        padding: 18px 16px;
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- نوار کناری الهام‌گرفته از Koillection -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">📚</span>
+        <div>
+          <h1>کتاب‌خانه من</h1>
+          <small>مدیریت موجودی و فروش</small>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-filter="all">همه کتاب‌ها</button>
+        <button class="nav-btn" data-filter="available">موجود برای فروش</button>
+        <button class="nav-btn" data-filter="out">ناموجود (اتمام موجودی)</button>
+      </nav>
+
+      <div class="backup-box">
+        <p>پشتیبان‌گیری از لیست</p>
+        <button id="exportBtn" type="button" class="btn-outline">دانلود فایل پشتیبان</button>
+        <label for="importInput" class="btn-outline file-label">بازیابی از فایل</label>
+        <input type="file" id="importInput" accept=".json" hidden />
+      </div>
+    </aside>
+
+    <!-- بخش اصلی -->
+    <main class="main-content">
+      <!-- کارت‌های آمار -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-title">تعداد عناوین</span>
+          <strong id="statTitles">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-title">مجموع جلدهای موجود</span>
+          <strong id="statStock">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-title">ارزش کل موجودی (تومان)</span>
+          <strong id="statValue">0</strong>
+        </div>
+        <div class="stat-card warning">
+          <span class="stat-title">عناوین ناموجود</span>
+          <strong id="statOut">0</strong>
+        </div>
+      </section>
+
+      <!-- نوار ابزار: جستجو و افزودن کتاب -->
+      <section class="toolbar">
+        <div class="search-box">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="جستجوی سریع نام کتاب، نویسنده، ناشر یا دسته‌بندی..."
+          />
+        </div>
+        <select id="categoryFilter">
+          <option value="all">همه دسته‌بندی‌ها</option>
+        </select>
+        <button id="openModalBtn" type="button" class="btn-primary">+ افزودن کتاب جدید</button>
+      </section>
+
+      <!-- شبکه نمایش کارت‌های کتاب -->
+      <section id="booksGrid" class="books-grid"></section>
+    </main>
+  </div>
+
+  <!-- پنجره افزودن / ویرایش کتاب -->
+  <div id="bookModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">افزودن کتاب جدید</h2>
+        <button id="closeModalBtn" type="button" class="close-btn">&times;</button>
+      </div>
+      <form id="bookForm">
+        <input type="hidden" id="bookId" />
+        <div class="form-grid">
+          <div class="form-group">
+            <label>نام کتاب *</label>
+            <input type="text" id="title" required placeholder="مثلاً: کلیدر" />
+          </div>
+          <div class="form-group">
+            <label>نویسنده *</label>
+            <input type="text" id="author" required placeholder="مثلاً: محمود دولت‌آبادی" />
+          </div>
+          <div class="form-group">
+            <label>دسته‌بندی / ژانر</label>
+            <input type="text" id="category" placeholder="مثلاً: رمان، روانشناسی، تاریخی" />
+          </div>
+          <div class="form-group">
+            <label>ناشر / سال چاپ</label>
+            <input type="text" id="publisher" placeholder="مثلاً: نشر چشمه - ۱۴۰۲" />
+          </div>
+          <div class="form-group">
+            <label>تعداد موجودی *</label>
+            <input type="number" id="stock" min="0" required value="1" />
+          </div>
+          <div class="form-group">
+            <label>قیمت فروش (تومان) *</label>
+            <input type="number" id="price" min="0" required placeholder="مثلاً: 350000" />
+          </div>
+          <div class="form-group full">
+            <label>لینک تصویر جلد (اختیاری)</label>
+            <input type="url" id="cover" placeholder="https://..." />
+          </div>
+          <div class="form-group full">
+            <label>توضیحات / وضعیت ظاهری کتاب</label>
+            <textarea id="notes" rows="2" placeholder="مثلاً: جلد شومیز، نو، چاپ جدید"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="cancelBtn" class="btn-outline">انصراف</button>
+          <button type="submit" class="btn-primary">ذخیره کتاب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "my_book_collection_v1";
+
+    const defaultBooks = [
+      {
+        id: 1,
+        title: "بوف کور",
+        author: "صادق هدایت",
+        category: "داستان ایرانی",
+        publisher: "انتشارات امیرکبیر",
+        stock: 3,
+        price: 185000,
+        cover: "",
+        notes: "چاپ جدید، جلد شومیز، کاملاً نو"
+      },
+      {
+        id: 2,
+        title: "انسان در جستجوی معنا",
+        author: "ویکتور فرانکل",
+        category: "روانشناسی",
+        publisher: "نشر درسا",
+        stock: 0,
+        price: 240000,
+        cover: "",
+        notes: "ترجمه نهضت صالحیان"
+      }
+    ];
+
+    let books = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultBooks;
+    let currentStatusFilter = "all";
+
+    const booksGrid = document.getElementById("booksGrid");
+    const searchInput = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const bookModal = document.getElementById("bookModal");
+    const bookForm = document.getElementById("bookForm");
+
+    function saveBooks() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
+      renderAll();
+    }
+
+    function formatPrice(num) {
+      return Number(num).toLocaleString("fa-IR");
+    }
+
+    function updateStats() {
+      const totalTitles = books.length;
+      const totalStock = books.reduce((sum, b) => sum + Number(b.stock), 0);
+      const totalValue = books.reduce((sum, b) => sum + Number(b.stock) * Number(b.price), 0);
+      const outOfStock = books.filter((b) => Number(b.stock) === 0).length;
+
+      document.getElementById("statTitles").textContent = totalTitles.toLocaleString("fa-IR");
+      document.getElementById("statStock").textContent = totalStock.toLocaleString("fa-IR");
+      document.getElementById("statValue").textContent = formatPrice(totalValue);
+      document.getElementById("statOut").textContent = outOfStock.toLocaleString("fa-IR");
+    }
+
+    function updateCategories() {
+      const currentVal = categoryFilter.value;
+      const categories = [...new Set(books.map((b) => b.category).filter(Boolean))];
+      categoryFilter.innerHTML = `<option value="all">همه دسته‌بندی‌ها</option>`;
+      categories.forEach((cat) => {
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        categoryFilter.appendChild(opt);
+      });
+      if (categories.includes(currentVal)) {
+        categoryFilter.value = currentVal;
+      }
+    }
+
+    function renderBooks() {
+      const query = searchInput.value.trim().toLowerCase();
+      const selectedCategory = categoryFilter.value;
+
+      const filtered = books.filter((book) => {
+        const matchesSearch =
+          book.title.toLowerCase().includes(query) ||
+          book.author.toLowerCase().includes(query) ||
+          (book.publisher && book.publisher.toLowerCase().includes(query)) ||
+          (book.category && book.category.toLowerCase().includes(query));
+
+        const matchesCategory =
+          selectedCategory === "all" || book.category === selectedCategory;
+
+        const matchesStatus =
+          currentStatusFilter === "all" ||
+          (currentStatusFilter === "available" && Number(book.stock) > 0) ||
+          (currentStatusFilter === "out" && Number(book.stock) === 0);
+
+        return matchesSearch && matchesCategory && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        booksGrid.innerHTML = `<p style="color:#64748b;">کتابی با این مشخصات پیدا نشد.</p>`;
+        return;
+      }
+
+      booksGrid.innerHTML = filtered
+        .map(
+          (book) => `
+          <div class="book-card">
+            <div class="book-top">
+              ${
+                book.cover
+                  ? `<img src="${book.cover}" alt="${book.title}" class="book-cover" />`
+                  : `<div class="book-cover">📘</div>`
+              }
+              <div class="book-info">
+                <h3>${book.title}</h3>
+                <p class="book-author">${book.author} ${book.publisher ? `• ${book.publisher}` : ""}</p>
+                ${book.category ? `<span class="badge">${book.category}</span>` : ""}
+              </div>
+            </div>
+
+            <div class="book-meta">
+              <span class="price-tag">${formatPrice(book.price)} تومان</span>
+              <div class="stock-control">
+                <button type="button" class="qty-btn" onclick="changeStock(${book.id}, -1)" title="کاهش موجودی">-</button>
+                <span class="stock-badge ${book.stock > 0 ? "in" : "out"}">
+                  ${book.stock > 0 ? `${book.stock} عدد موجود` : "ناموجود"}
+                </span>
+                <button type="button" class="qty-btn" onclick="changeStock(${book.id}, 1)" title="افزایش موجودی">+</button>
+              </div>
+            </div>
+
+            ${book.notes ? `<div class="book-notes">${book.notes}</div>` : ""}
+
+            <div class="book-actions">
+              <button type="button" class="action-link" onclick="editBook(${book.id})">ویرایش</button>
+              <button type="button" class="action-link delete" onclick="deleteBook(${book.id})">حذف</button>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+    }
+
+    function renderAll() {
+      updateStats();
+      updateCategories();
+      renderBooks();
+    }
+
+    window.changeStock = function (id, delta) {
+      const book = books.find((b) => b.id === id);
+      if (!book) return;
+      book.stock = Math.max(0, Number(book.stock) + delta);
+      saveBooks();
+    };
+
+    window.deleteBook = function (id) {
+      if (!confirm("این کتاب از لیست حذف شود؟")) return;
+      books = books.filter((b) => b.id !== id);
+      saveBooks();
+    };
+
+    window.editBook = function (id) {
+      const book = books.find((b) => b.id === id);
+      if (!book) return;
+      document.getElementById("modalTitle").textContent = "ویرایش کتاب";
+      document.getElementById("bookId").value = book.id;
+      document.getElementById("title").value = book.title;
+      document.getElementById("author").value = book.author;
+      document.getElementById("category").value = book.category || "";
+      document.getElementById("publisher").value = book.publisher || "";
+      document.getElementById("stock").value = book.stock;
+      document.getElementById("price").value = book.price;
+      document.getElementById("cover").value = book.cover || "";
+      document.getElementById("notes").value = book.notes || "";
+      bookModal.classList.remove("hidden");
+    };
+
+    document.getElementById("openModalBtn").addEventListener("click", () => {
+      bookForm.reset();
+      document.getElementById("bookId").value = "";
+      document.getElementById("modalTitle").textContent = "افزودن کتاب جدید";
+      bookModal.classList.remove("hidden");
+    });
+
+    document.getElementById("closeModalBtn").addEventListener("click", () => {
+      bookModal.classList.add("hidden");
+    });
+
+    document.getElementById("cancelBtn").addEventListener("click", () => {
+      bookModal.classList.add("hidden");
+    });
+
+    bookForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const id = document.getElementById("bookId").value;
+      const bookData = {
+        id: id ? Number(id) : Date.now(),
+        title: document.getElementById("title").value.trim(),
+        author: document.getElementById("author").value.trim(),
+        category: document.getElementById("category").value.trim(),
+        publisher: document.getElementById("publisher").value.trim(),
+        stock: Number(document.getElementById("stock").value),
+        price: Number(document.getElementById("price").value),
+        cover: document.getElementById("cover").value.trim(),
+        notes: document.getElementById("notes").value.trim()
+      };
+
+      if (id) {
+        const idx = books.findIndex((b) => b.id === Number(id));
+        if (idx !== -1) books[idx] = bookData;
+      } else {
+        books.unshift(bookData);
+      }
+
+      bookModal.classList.add("hidden");
+      saveBooks();
+    });
+
+    document.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentStatusFilter = btn.dataset.filter;
+        renderBooks();
+      });
+    });
+
+    searchInput.addEventListener("input", renderBooks);
+    categoryFilter.addEventListener("change", renderBooks);
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(books, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `books-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("importInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (Array.isArray(imported)) {
+            books = imported;
+            saveBooks();
+            alert("لیست کتاب‌ها با موفقیت بازیابی شد!");
+          }
+        } catch {
+          alert("فایل انتخاب‌شده معتبر نیست.");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
